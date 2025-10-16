@@ -1,0 +1,102 @@
+---
+title: "Hospital Length of Stays"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+
+library(tidyverse)
+library(NHSRdatasets)
+library(knitr)
+library(gt)
+```
+
+# Load the data
+
+*The data we'll be working with are part of the NHSRdatasets package*
+
+```{r}
+data("LOS_model")
+?LOS_model
+```
+
+# Inspect
+
+*Use your favourite functions to find out more about this dataset*
+
+```{r}
+glimpse(LOS_model)
+
+```
+
+This table has `r nrow(LOS_model)` rows and `r ncol(LOS_model)` columns. #how to add r code to text
+
+# Tidying up Death
+
+*Make Death a factor*
+
+```{r}
+LOS_model <- LOS_model %>% 
+  mutate(Death = factor(Death))
+
+glimpse(LOS_model) #to check death is now a factor
+```
+
+*Recode Death levels*
+
+```{r}
+LOS_model <- LOS_model %>% 
+  mutate(Death = factor(Death, levels = c(0,1), labels = c("survived", "died")))
+```
+
+# Summary table
+
+*Create a summary table where each combination of Organisation and Death gets a count (n).*
+
+```{r}
+LOS_table_long <- LOS_model %>% 
+  group_by(Organisation, Death) %>% 
+  tally() #count() can be used as well, summarise then count using n function
+```
+
+# Wide table
+
+*Make a wide table with Dead and Survived as rows with a column for each Trust*
+
+```{r}
+LOS_table_wide <- LOS_table_long %>% 
+  pivot_wider(names_from = Organisation, values_from = n)
+```
+
+# Trust table
+
+*Another pivot with Survived and Died as columns, Trusts as rows. Also calculate the % survived for each Trust*
+
+```{r}
+LOS_table_wide_two_columns <- LOS_table_long %>% 
+  pivot_wider(names_from = Death, values_from = n) %>% 
+  mutate(Percent_survived = (survived/(survived+died)) *100)
+
+LOS_table_wide_two_columns
+```
+
+# Pretty table
+
+*Make the wide table pretty with gt()*
+
+```{r}
+LOS_table_wide_two_columns %>% 
+  ungroup() %>% 
+  gt() %>% 
+  fmt_percent(columns = Percent_survived, decimals = 1, scale_values = FALSE)
+  
+```
+
+# The end
+
+*Let's knit to html to see your nice report (use the Knit button in RStudio, at the top of your editor window)*
